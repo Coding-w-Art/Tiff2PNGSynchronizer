@@ -434,7 +434,24 @@ namespace YesChefTiffWatcher
 
         private void StartSync()
         {
+            watcher.EnableRaisingEvents = false;
+            foreach (string path in syncingList)
+            {
 
+            }
+            syncingList.Clear();
+
+
+
+            foreach (string path in removingList)
+            {
+
+            }
+            removingList.Clear();
+
+
+            if (watchingState)
+                watcher.EnableRaisingEvents = true;
         }
     }
 }
