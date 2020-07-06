@@ -6,26 +6,130 @@
         xmlns:local="clr-namespace:YesChefTiffWatcher"
         mc:Ignorable="d"
         x:Name="window"
-        Title="Yes! Chef 资源同步工具" Height="280" Width="540" Background="#FF252526" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize" StateChanged="Window_StateChanged" Closing="Window_Closing" Icon="/Resources/Icon.ico">
+        Title="Yes! Chef 资源同步工具" Height="360" Width="580" Background="Transparent" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize" StateChanged="Window_StateChanged" Closing="Window_Closing" Icon="/Resources/Icon.ico" AllowsTransparency="True" WindowStyle="None">
+    
+    <!--<WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="50" GlassFrameThickness="4,20,4,4"/>
+    </WindowChrome.WindowChrome>-->
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <!--Base style for title bar buttons-->
+            <Style x:Key="CaptionButtonStyle" TargetType="Button">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid x:Name="LayoutRoot" Background="#FF2D2D30" Width="44" Height="30">
+                                <TextBlock x:Name="txt" Text="{TemplateBinding Content}" FontFamily="Segoe MDL2 Assets" FontSize="10" 
+                                   Foreground="#F1F1F1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   RenderOptions.ClearTypeHint="Auto" TextOptions.TextRenderingMode="Aliased" TextOptions.TextFormattingMode="Display"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="LayoutRoot" Property="Background" Value="#FF3F3F41"/>
+                                    <Setter TargetName="txt" Property="Foreground" Value="White"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="LayoutRoot" Property="Background" Value="#FF007ACC"/>
+                                    <Setter TargetName="txt" Property="Foreground" Value="White"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="CaptionCloseButtonStyle" TargetType="Button">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid x:Name="LayoutRoot" Background="#2D2D30" Width="44" Height="30">
+                                <TextBlock x:Name="txt" Text="{TemplateBinding Content}" FontFamily="Segoe MDL2 Assets" FontSize="10" 
+                                           Foreground="#F1F1F1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           RenderOptions.ClearTypeHint="Auto" TextOptions.TextRenderingMode="Aliased" TextOptions.TextFormattingMode="Display"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="LayoutRoot" Property="Background" Value="#E81123"/>
+                                    <Setter TargetName="txt" Property="Foreground" Value="White"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="LayoutRoot" Property="Background" Value="#8B0A14"/>
+                                    <Setter TargetName="txt" Property="Foreground" Value="White"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--Minimize-->
+            <Style x:Key="MinimizeButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionButtonStyle}">
+                <Setter Property="Content" Value="&#xE949;"/>
+            </Style>
+
+            <!--Close-->
+            <Style x:Key="CloseButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionCloseButtonStyle}">
+                <Setter Property="Content" Value="&#xE106;"/>
+            </Style>
+
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <!--Title bar button commands-->
+    <Window.CommandBindings>
+        <CommandBinding Command="{x:Static SystemCommands.CloseWindowCommand}" CanExecute="CommandBinding_CanExecute" Executed="CommandBinding_Executed_Close" />
+        <CommandBinding Command="{x:Static SystemCommands.MinimizeWindowCommand}" CanExecute="CommandBinding_CanExecute" Executed="CommandBinding_Executed_Minimize" />
+    </Window.CommandBindings>
 
     <Grid>
-        <DockPanel>
-            <StackPanel Orientation="Horizontal"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Center">
-            </StackPanel>
-        </DockPanel>
+        <Grid.Effect>
+            <DropShadowEffect Color="#000000" Opacity="0.35" BlurRadius="20" Direction="-90" RenderingBias="Quality" ShadowDepth="0"/>
+        </Grid.Effect>
 
-        <Label Content="监控路径" HorizontalAlignment="Left" Margin="20,16,0,0" VerticalAlignment="Top" Foreground="#FFF1F1F1" Height="24"/>
-        <TextBox x:Name="TextBoxWatcher" HorizontalAlignment="Left" Height="36" Margin="24,46,0,0" TextWrapping="NoWrap" Text="选择文件夹..." VerticalAlignment="Top" Width="420" BorderBrush="#FF3F3F43" Background="#FF333337" Foreground="#FF999999" Padding="8,10" FontSize="12" IsReadOnly="True"/>
-        <Button x:Name="BtnPickWatcher" Content="..." HorizontalAlignment="Left" Margin="460,46,0,0" VerticalAlignment="Top" Width="40" Height="36" Background="#FF3F3F46" Foreground="#FFF1F1F1" FontSize="12" Padding="0" BorderThickness="1" BorderBrush="#FF555555" MouseEnter="Button_MouseEnter" MouseLeave="Button_MouseLeave" Click="BtnPickWatcher_Click"/>
-        <Label Content="同步路径" HorizontalAlignment="Left" Margin="20,90,0,0" VerticalAlignment="Top" Foreground="#FFF1F1F1" Height="24"/>
-        <TextBox x:Name="TextBoxSyncer" HorizontalAlignment="Left" Height="36" Margin="24,120,0,0" TextWrapping="NoWrap" Text="选择文件夹..." VerticalAlignment="Top" Width="420" BorderBrush="#FF3F3F43" Background="#FF333337" Foreground="#FF999999" Padding="8,10" FontSize="12" IsReadOnly="True"/>
-        <Button x:Name="BtnPickSyncer" Content="..." HorizontalAlignment="Left" Margin="460,120,0,0" VerticalAlignment="Top" Width="40" Height="36" Background="#FF3F3F46" Foreground="#FFF1F1F1" FontSize="12" Padding="0" BorderThickness="1" BorderBrush="#FF555555" MouseEnter="Button_MouseEnter" MouseLeave="Button_MouseLeave" Click="BtnPickSyncer_Click" IsHitTestVisible="False"/>
-        <Button x:Name="BtnStart" Content="开始监控" HorizontalAlignment="Left" Margin="404,184,0,0" VerticalAlignment="Top" Width="96" Height="36" Background="#FF3F3F46" Foreground="#FFF1F1F1" FontSize="12" Padding="0" BorderThickness="1" BorderBrush="#FF007ACC" MouseEnter="Button_MouseEnter" MouseLeave="Button_MouseLeave" Click="BtnStart_Click"/>
-        <Button x:Name="BtnSync" Content="同步" HorizontalAlignment="Left" Margin="292,184,0,0" VerticalAlignment="Top" Width="96" Height="36" Background="#FF3F3F46" Foreground="#FFF1F1F1" FontSize="12" Padding="0" BorderThickness="1" BorderBrush="#FF555555" MouseEnter="Button_MouseEnter" MouseLeave="Button_MouseLeave" Click="BtnStart_Click" Visibility="Collapsed"/>
-        <Grid VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
-            <Rectangle x:Name="ProgressBar" HorizontalAlignment="Stretch" Height="0" Fill="#FF007ACC"/>
+        <Grid Margin="20" Grid.Row="0" Height="30" Background="#FF2D2D30" VerticalAlignment="Top" MouseDown="MoveWindow">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                <!--App icon-->
+                <Image x:Name="WindowIcon" Source="Resources/Icon.ico" Width="18" Margin="4" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                <Label x:Name="WindowTitle" Content="TIFF > PNG 资源同步工具" FontSize="12" VerticalAlignment="Center" Foreground="White"/>
+            </StackPanel>
+
+            <!--Caption buttons-->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" >
+                <Button Style="{StaticResource MinimizeButtonStyle}" WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Minimize"
+                        Command="{x:Static SystemCommands.MinimizeWindowCommand}"/>
+                <Button Style="{StaticResource CloseButtonStyle}" WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Close"
+                        Command="{x:Static SystemCommands.CloseWindowCommand}"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Margin="20, 50, 20, 20" Background="#FF252526">
+            <CheckBox x:Name="CheckBoxAutoRun" Content="开机自动运行" HorizontalAlignment="Right" VerticalAlignment="Top" Foreground="#999999" BorderBrush="#FF3F3F43" VerticalContentAlignment="Center" Background="#FFF1F1F1" Margin="0,12,24,0" Click="AutoRun_Click"/>
+            <Label Content="监控路径" HorizontalAlignment="Left" Margin="20,26,0,0" VerticalAlignment="Top" Foreground="#FFF1F1F1" Height="24"/>
+            <TextBox x:Name="TextBoxWatcher" HorizontalAlignment="Left" Height="36" Margin="24,56,0,0" TextWrapping="NoWrap" Text="选择文件夹..." VerticalAlignment="Top" Width="436" BorderBrush="#FF3F3F43" Background="#FF333337" Foreground="#FF999999" Padding="8,10" FontSize="12" IsReadOnly="True"/>
+            <Button x:Name="BtnPickWatcher" Content="..." HorizontalAlignment="Left" Margin="476,56,0,0" VerticalAlignment="Top" Width="40" Height="36" Background="#FF3F3F46" Foreground="#FFF1F1F1" FontSize="12" Padding="0" BorderThickness="1" BorderBrush="#FF555555" MouseEnter="Button_MouseEnter" MouseLeave="Button_MouseLeave" Click="BtnPickWatcher_Click"/>
+            <Label Content="同步路径" HorizontalAlignment="Left" Margin="20,100,0,0" VerticalAlignment="Top" Foreground="#FFF1F1F1" Height="24"/>
+            <TextBox x:Name="TextBoxSyncer" HorizontalAlignment="Left" Height="36" Margin="24,130,0,0" TextWrapping="NoWrap" Text="选择文件夹..." VerticalAlignment="Top" Width="436" BorderBrush="#FF3F3F43" Background="#FF333337" Foreground="#FF999999" Padding="8,10" FontSize="12" IsReadOnly="True"/>
+            <Button x:Name="BtnPickSyncer" Content="..." HorizontalAlignment="Left" Margin="476,130,0,0" VerticalAlignment="Top" Width="40" Height="36" Background="#FF3F3F46" Foreground="#FFF1F1F1" FontSize="12" Padding="0" BorderThickness="1" BorderBrush="#FF555555" MouseEnter="Button_MouseEnter" MouseLeave="Button_MouseLeave" Click="BtnPickSyncer_Click"/>
+            <Button x:Name="BtnStart" Content="开始监控" HorizontalAlignment="Left" Margin="420,232,0,0" VerticalAlignment="Top" Width="96" Height="36" Background="#FF3F3F46" Foreground="#FFF1F1F1" FontSize="12" Padding="0" BorderThickness="1" BorderBrush="#FF007ACC" MouseEnter="Button_MouseEnter" MouseLeave="Button_MouseLeave" Click="BtnStart_Click"/>
+            <Button x:Name="BtnSync" Content="同步" HorizontalAlignment="Left" Margin="308,232,0,0" VerticalAlignment="Top" Width="96" Height="36" Background="#FF3F3F46" Foreground="#FFF1F1F1" FontSize="12" Padding="0" BorderThickness="1" BorderBrush="#FF555555" MouseEnter="Button_MouseEnter" MouseLeave="Button_MouseLeave" Click="BtnStart_Click" Visibility="Collapsed"/>
+
+            <Button x:Name="BtnSyncFile" Content="同步文件..." HorizontalAlignment="Left" Margin="24,232,0,0" VerticalAlignment="Top" Width="96" Height="36" Background="#FF3F3F46" Foreground="#FFF1F1F1" FontSize="12" Padding="0" BorderThickness="1" BorderBrush="#FF555555" MouseEnter="Button_MouseEnter" MouseLeave="Button_MouseLeave" Click="BtnStart_Click"/>
+            <Button x:Name="BtnSyncFolder" Content="同步文件夹..." HorizontalAlignment="Left" Margin="136,232,0,0" VerticalAlignment="Top" Width="96" Height="36" Background="#FF3F3F46" Foreground="#FFF1F1F1" FontSize="12" Padding="0" BorderThickness="1" BorderBrush="#FF555555" MouseEnter="Button_MouseEnter" MouseLeave="Button_MouseLeave" Click="BtnStart_Click"/>
+
+            <Grid VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
+                <Rectangle x:Name="ProgressBar" HorizontalAlignment="Stretch" Height="0" Fill="#FF007ACC"/>
+            </Grid>
+
+            <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left" Margin="24, 196, 24, 0" Orientation="Horizontal">
+                <TextBlock x:Name="TextBlockSync" Text="待同步文件：[0]" TextDecorations="Underline" Foreground="DodgerBlue" VerticalAlignment="Top" HorizontalAlignment="Left" Cursor="Hand" IsHitTestVisible="True" MouseLeftButtonUp="TextBlockSync_Click"/>
+                <TextBlock x:Name="TextBlockRemove" Text="待删除文件：[0]" Margin="20, 0, 0, 0" TextDecorations="Underline" Foreground="Crimson" VerticalAlignment="Top" HorizontalAlignment="Left" Cursor="Hand" IsHitTestVisible="True" MouseLeftButtonUp="TextBlockRemove_Click"/>
+                <TextBlock x:Name="TextBlockClear" Text="清除..." Margin="20, 0, 0, 0" TextDecorations="Underline" Foreground="#999999" VerticalAlignment="Top" HorizontalAlignment="Left" Cursor="Hand" IsHitTestVisible="True" MouseLeftButtonUp="TextBlockClear_Click"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Height="320" Width="540">
+            <Border Height="320" Width="540" BorderBrush="#3F3F41" BorderThickness="1"/>
         </Grid>
     </Grid>
 </Window>
