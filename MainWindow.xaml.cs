@@ -292,6 +292,12 @@ namespace YesChefTiffWatcher
             {
                 MinimizeWindow();
             }
+            //else if (WindowState == WindowState.Normal)
+            //{
+            //    Application.Current.MainWindow.Topmost = true;
+            //    Application.Current.MainWindow.Topmost = false;
+            //    Application.Current.MainWindow.Focus();
+            //}
         }
 
         private void MinimizeWindow()
@@ -612,6 +618,23 @@ namespace YesChefTiffWatcher
             removingList.Clear();
             TextBlockSync.Text = "待同步文件：[0]";
             TextBlockRemove.Text = "待删除文件：[0]";
+        }
+
+        private void Window_Deactivated(object sender, EventArgs e)
+        {
+            WindowShadowEffect.BlurRadius = 10;
+            //BtnClose.SetValue(StyleProperty, Application.Current.Resources["CaptionInactiveButtonStyle"]);
+            //BtnMinimize.SetValue(StyleProperty, Application.Current.Resources["CaptionInactiveButtonStyle"]);
+        }
+
+        private void MainWindow_OnActivated(object sender, EventArgs e)
+        {
+            WindowShadowEffect.BlurRadius = 20;
+            //Style style1 = Application.Current.Resources["CaptionCloseButtonStyle"] as Style;
+            //BtnClose.Style = style1;
+
+            //Style style2 = Application.Current.Resources["CaptionButtonStyle"] as Style;
+            //BtnMinimize.Style = style2;
         }
     }
 }
