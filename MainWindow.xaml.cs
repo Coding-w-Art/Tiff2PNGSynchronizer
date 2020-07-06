@@ -175,16 +175,9 @@ namespace YesChefTiffWatcher
 
         private void Icon_ShowClick(object sender, EventArgs e)
         {
-            if (!Application.Current.MainWindow.IsVisible)
-            {
-                Application.Current.MainWindow.Show();
-            }
-
-            Application.Current.MainWindow.Show();
+            window.ShowInTaskbar = true;
+            WindowState = WindowState.Normal;
             Application.Current.MainWindow.Activate();
-            Application.Current.MainWindow.Topmost = true;
-            Application.Current.MainWindow.Topmost = false;
-            Application.Current.MainWindow.Focus();
         }
 
         private void Icon_StopClick(object sender, EventArgs e)
@@ -303,7 +296,7 @@ namespace YesChefTiffWatcher
         private void MinimizeWindow()
         {
             WindowState = WindowState.Minimized;
-            App.Current.MainWindow.Visibility = Visibility.Hidden;
+            window.ShowInTaskbar = false;
         }
 
         private void OnWatcherFileChanged(object source, FileSystemEventArgs e)

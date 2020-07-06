@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         x:Name="window"
         Title="Yes! Chef 资源同步工具" Height="360" Width="580" Background="Transparent" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize" StateChanged="Window_StateChanged" Closing="Window_Closing" Icon="/Resources/Icon.ico" AllowsTransparency="True" WindowStyle="None"
-        Activated="MainWindow_OnActivated" Deactivated="Window_Deactivated">
+        Activated="MainWindow_OnActivated" Deactivated="Window_Deactivated" ShowInTaskbar="True">
     
     <WindowChrome.WindowChrome>
         <WindowChrome UseAeroCaptionButtons="False"/>
