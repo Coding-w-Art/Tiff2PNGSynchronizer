@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Security.AccessControl;
 using System.Text;
@@ -11,6 +13,9 @@ using System.Windows.Media.Imaging;
 using Microsoft.VisualBasic.FileIO;
 using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Dialogs;
+using Color = System.Windows.Media.Color;
+using Image = System.Drawing.Image;
+using SearchOption = System.IO.SearchOption;
 
 namespace YesChefTiffWatcher
 {
@@ -20,9 +25,10 @@ namespace YesChefTiffWatcher
     public partial class MainWindow : Window
     {
         System.Windows.Forms.NotifyIcon notifyIcon;
-        System.Windows.Forms.MenuItem syncMenuItem;
         System.Windows.Forms.MenuItem showMenuItem;
+        System.Windows.Forms.MenuItem syncMenuItem;
         System.Windows.Forms.MenuItem stopMenuItem;
+        System.Windows.Forms.MenuItem resumeMenuItem;
         System.Windows.Forms.MenuItem exitMenuItem;
         FileSystemWatcher watcher;
 
@@ -31,6 +37,8 @@ namespace YesChefTiffWatcher
         bool watchingState = false;
         bool readyForWatch = false;
         bool syncingState = false;
+        private bool updateUI = true;
+        private double progressBarWidth;
 
 
         List<string> syncingList = new List<string>();
@@ -42,6 +50,7 @@ namespace YesChefTiffWatcher
             InitializeSystemTray();
             InitializeWatcher();
 
+            progressBarWidth = ProgressBar.Width;
             FileSystemWatcher watcher = new FileSystemWatcher();
 
             strWatcherPath = Properties.Settings.Default.WatcherPath;
@@ -89,20 +98,43 @@ namespace YesChefTiffWatcher
             SystemCommands.CloseWindow(this);
         }
 
-
         private void StartWatcher()
         {
+            if (!watchingState)
+            {
+                ShowTrayMessage($"正在监控：{strWatcherPath}");
+            }
+
             watcher.Path = strWatcherPath;
             watchingState = true;
             watcher.EnableRaisingEvents = true;
-            notifyIcon.Icon = new System.Drawing.Icon("../../Resources/Icon_Running.ico");
+            notifyIcon.Icon = new Icon("../../Resources/Icon_Running.ico");
+
+            if (updateUI)
+            {
+                BtnStart.Content = "暂停监控";
+                WindowTitle.Content = $"{Properties.Resources.AppName}  -  正在监控...";
+                WindowIcon.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/Icon_Running.ico", UriKind.RelativeOrAbsolute));
+            }
         }
 
         private void StopWatcher()
         {
+            if (watchingState)
+            {
+                ShowTrayMessage("监控已暂停");
+            }
+
             watchingState = false;
             watcher.EnableRaisingEvents = false;
-            notifyIcon.Icon = new System.Drawing.Icon("../../Resources/Icon_StopRunning.ico");
+            notifyIcon.Icon = new Icon("../../Resources/Icon_StopRunning.ico");
+
+            if (updateUI)
+            {
+                BtnStart.Content = "开始监控";
+                WindowTitle.Content = $"{Properties.Resources.AppName}";
+                WindowIcon.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/Icon.ico", UriKind.RelativeOrAbsolute));
+            }
         }
 
         private bool CheckReadyToWatch()
@@ -133,6 +165,8 @@ namespace YesChefTiffWatcher
             showMenuItem.Click += Icon_ShowClick;
             stopMenuItem = new System.Windows.Forms.MenuItem("暂停监控");
             stopMenuItem.Click += Icon_StopClick;
+            resumeMenuItem = new System.Windows.Forms.MenuItem("开始监控");
+            stopMenuItem.Click += Icon_ResumeClick;
             exitMenuItem = new System.Windows.Forms.MenuItem("退出");
             exitMenuItem.Click += Icon_ExitClick;
             notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(new[] { showMenuItem, syncMenuItem, stopMenuItem, exitMenuItem });
@@ -155,10 +189,13 @@ namespace YesChefTiffWatcher
                 syncMenuItem.Enabled = false;
             }
             notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(new[] { showMenuItem, syncMenuItem, stopMenuItem, exitMenuItem });
-            BtnSync.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
-            TextBlockSync.Text = $"待同步文件：[{syncingList.Count}]";
-            TextBlockRemove.Text = $"待删除文件：[{removingList.Count}]";
+            if (updateUI)
+            {
+                BtnSync.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
+                TextBlockSync.Text = $"待同步文件：[{syncingList.Count}]";
+                TextBlockRemove.Text = $"待删除文件：[{removingList.Count}]";
+            }
         }
 
         private void InitializeWatcher()
@@ -182,9 +219,14 @@ namespace YesChefTiffWatcher
 
         private void Icon_StopClick(object sender, EventArgs e)
         {
-            watchingState = false;
-            watcher.EnableRaisingEvents = false;
             StopWatcher();
+        }
+
+        private void Icon_ResumeClick(object sender, EventArgs e)
+        {
+            if (!Directory.Exists(strWatcherPath))
+                return;
+            StartWatcher();
         }
 
         private void Icon_ExitClick(object sender, EventArgs e)
@@ -233,7 +275,7 @@ namespace YesChefTiffWatcher
                 string path = dialog.FileName;
                 if (!string.IsNullOrEmpty(strSyncerPath) && strSyncerPath == path)
                 {
-                    MessageBox.Show("不能与同步文件夹相同。", "提示", MessageBoxButton.OK);
+                    MessageBox.Show("不能与目标文件夹相同。", Properties.Resources.AppName, MessageBoxButton.OK);
                     return;
                 }
 
@@ -257,7 +299,7 @@ namespace YesChefTiffWatcher
                 string path = dialog.FileName;
                 if (!string.IsNullOrEmpty(strWatcherPath) && strWatcherPath == path)
                 {
-                    MessageBox.Show("不能与同步文件夹相同。", "提示", MessageBoxButton.OK);
+                    MessageBox.Show("不能与原始文件夹相同。", Properties.Resources.AppName, MessageBoxButton.OK);
                     return;
                 }
 
@@ -283,14 +325,30 @@ namespace YesChefTiffWatcher
         {
             if (WindowState == WindowState.Minimized)
             {
-                MinimizeWindow();
+                window.ShowInTaskbar = false;
+                updateUI = false;
             }
-            //else if (WindowState == WindowState.Normal)
-            //{
-            //    Application.Current.MainWindow.Topmost = true;
-            //    Application.Current.MainWindow.Topmost = false;
-            //    Application.Current.MainWindow.Focus();
-            //}
+            else if (WindowState == WindowState.Normal)
+            {
+                updateUI = true;
+                int count = syncingList.Count + removingList.Count;
+                BtnSync.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
+                TextBlockSync.Text = $"待同步文件：[{syncingList.Count}]";
+                TextBlockRemove.Text = $"待删除文件：[{removingList.Count}]";
+
+                if (watchingState)
+                {
+                    BtnStart.Content = "暂停监控";
+                    WindowTitle.Content = $"{Properties.Resources.AppName}  -  正在监控...";
+                    WindowIcon.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/Icon_Running.ico", UriKind.RelativeOrAbsolute));
+                }
+                else
+                {
+                    BtnStart.Content = "开始监控";
+                    WindowTitle.Content = $"{Properties.Resources.AppName}";
+                    WindowIcon.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/Icon.ico", UriKind.RelativeOrAbsolute));
+                }
+            }
         }
 
         private void MinimizeWindow()
@@ -305,19 +363,10 @@ namespace YesChefTiffWatcher
                 return;
 
             string path = e.FullPath;
-            //if (File.Exists(path))
-            //{
-            //    syncingList.Add(path);
-            //}
-
-            //ShowTrayMessage("修改文件", path);
-            //SyncTiffFile(e.FullPath);
-
-            if (!syncingList.Contains(e.FullPath))
+            if (!syncingList.Contains(path))
             {
-                syncingList.Add(e.FullPath);
+                syncingList.Add(path);
             }
-
             RefreshSystemTray();
         }
 
@@ -327,14 +376,6 @@ namespace YesChefTiffWatcher
                 return;
 
             string path = e.FullPath;
-            //if (File.Exists(path))
-            //{
-            //    syncingList.Add(path);
-            //}
-
-            //ShowTrayMessage("创建文件", path);
-            //SyncTiffFile(e.FullPath);
-
 
             string newPath = path.Replace(strWatcherPath, strSyncerPath);
             if (newPath != path)
@@ -364,12 +405,23 @@ namespace YesChefTiffWatcher
             if (newPath == path)
                 return;
 
+            if (File.Exists(newPath) && !removingList.Contains(newPath))
+            {
+                removingList.Add(newPath);
+            }
+
+            string meta = newPath + ".meta";
+            if (File.Exists(meta) && !removingList.Contains(meta))
+            {
+                removingList.Add(meta);
+            }
+
             newPath = Path.ChangeExtension(newPath, ".png");
             if (File.Exists(newPath))
             {
-                if (syncingList.Contains(path))
+                if (syncingList.Contains(newPath))
                 {
-                    syncingList.Remove(path);
+                    syncingList.Remove(newPath);
                 }
 
                 if (!removingList.Contains(newPath))
@@ -378,39 +430,83 @@ namespace YesChefTiffWatcher
                 }
             }
 
+            string newMeta = newPath + ".meta";
+            if (File.Exists(newMeta))
+            {
+                if (syncingList.Contains(newMeta))
+                {
+                    syncingList.Remove(newMeta);
+                }
+
+                if (!removingList.Contains(newMeta))
+                {
+                    removingList.Add(newMeta);
+                }
+            }
+
             RefreshSystemTray();
         }
 
-        private void OnWatcherFileRenamed(object source, FileSystemEventArgs e)
+        private void OnWatcherFileRenamed(object source, RenamedEventArgs e)
         {
             if (!watchingState)
                 return;
 
-            string path = e.FullPath;
-
-            if (!syncingList.Contains(e.FullPath))
+            string newPath = Path.ChangeExtension(e.FullPath, ".png");
+            newPath = newPath.Replace(strWatcherPath, strSyncerPath);
+            string oldPath = Path.ChangeExtension(e.OldFullPath, ".png");
+            oldPath = oldPath.Replace(strWatcherPath, strSyncerPath);
+            if (File.Exists(oldPath))
             {
-                syncingList.Add(e.FullPath);
+                if (File.Exists(newPath))
+                {
+                    File.Delete(newPath);
+                }
+                File.Move(oldPath, newPath);
+            }
+
+            string newMeta = newPath + ".meta";
+            string oldMeta = oldPath + ".meta";
+            if (File.Exists(oldMeta))
+            {
+                if (File.Exists(newMeta))
+                {
+                    File.Delete(newMeta);
+                }
+                File.Move(oldMeta, newMeta);
             }
         }
 
-        private void ShowTrayMessage(string title, string text)
+        private void ShowTrayMessage(string text)
         {
-            notifyIcon.BalloonTipTitle = title;
+            notifyIcon.BalloonTipTitle = Properties.Resources.AppName;
             notifyIcon.BalloonTipText = text;
             notifyIcon.ShowBalloonTip(1000);
         }
 
 
-        private void SyncFile(string path)
+        private bool SyncFile(string path, string destPath)
         {
+            if (!Directory.Exists(destPath))
+                return false;
+
             string ext = Path.GetExtension(path);
             if (ext != ".tif")
-                return;
+                return false;
 
             string newPath = path.Replace(strWatcherPath, strSyncerPath);
-            if (newPath == path)
-                return;
+            bool deleteOriginal = false;
+            if (newPath != path)
+            {
+                if (File.Exists(newPath))
+                {
+                    File.Delete(newPath);
+                }
+            }
+            else
+            {
+                deleteOriginal = true;
+            }
 
             string dir = Path.GetDirectoryName(newPath);
             if (!Directory.Exists(dir))
@@ -418,29 +514,59 @@ namespace YesChefTiffWatcher
                 Directory.CreateDirectory(dir);
             }
 
+            string newMeta = newPath + ".meta";
             newPath = Path.ChangeExtension(newPath, ".png");
-
-            using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read))
+            if (File.Exists(newMeta) && !File.Exists(newPath + ".meta"))
             {
-                if (stream.CanRead && stream.Length > 0)
-                {
-                    System.Drawing.Image image = System.Drawing.Image.FromStream(stream);
-                    image.Save(newPath, System.Drawing.Imaging.ImageFormat.Png);
-                    //var eps = new System.Drawing.Imaging.EncoderParameters(1);
-                    //var ep = new System.Drawing.Imaging.EncoderParameter(System.Drawing.Imaging.Encoder.ColorDepth, 24L);
-                    //eps.Param[0] = ep;
-                    //ep.Dispose();
-                    //eps.Dispose();
-                    image.Dispose();
-                }
-                stream.Close();
-                stream.Dispose();
+                File.Move(newMeta, newPath + ".meta");
             }
+
+            Image image = Image.FromFile(path);
+            EncoderParameters eps = new EncoderParameters(1);
+            if (Image.IsAlphaPixelFormat(image.PixelFormat))
+            {
+                var ep = new EncoderParameter(System.Drawing.Imaging.Encoder.ColorDepth, 32L);
+                eps.Param[0] = ep;
+            }
+            else
+            {
+                var ep = new EncoderParameter(System.Drawing.Imaging.Encoder.ColorDepth, 24L);
+                eps.Param[0] = ep;
+            }
+            image.Save(newPath, GetEncoderInfo("image/png"), eps);
+
+            if (deleteOriginal)
+            {
+                File.Delete(path);
+            }
+
+            return true;
+        }
+
+        private static ImageCodecInfo GetEncoderInfo(string mimeType)
+        {
+            int i;
+            ImageCodecInfo[] encoders = ImageCodecInfo.GetImageEncoders();
+            foreach (ImageCodecInfo encoder in encoders)
+            {
+                if (encoder.MimeType == mimeType)
+                    return encoder;
+            }
+            return null;
         }
 
         private void RemoveFile(string path)
         {
-            FileSystem.DeleteFile(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+            string meta = path + ".meta";
+            if (File.Exists(meta))
+            {
+                FileSystem.DeleteFile(meta, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+            }
+
+            if (File.Exists(path))
+            {
+                FileSystem.DeleteFile(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+            }
         }
 
         private void BtnStart_Click(object sender, RoutedEventArgs e)
@@ -448,10 +574,7 @@ namespace YesChefTiffWatcher
             if (watchingState)
             {
                 StopWatcher();
-                ShowTrayMessage(Properties.Resources.AppName, "监控已暂停");
-                BtnStart.Content = "开始监控";
-                WindowTitle.Content = $"{Properties.Resources.AppName}";
-                WindowIcon.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/Icon_StopRunning.ico", UriKind.RelativeOrAbsolute));
+                
             }
             else
             {
@@ -460,34 +583,34 @@ namespace YesChefTiffWatcher
                 {
                     StartWatcher();
                     MinimizeWindow();
-                    ShowTrayMessage(Properties.Resources.AppName, $"正在监控：{strWatcherPath}");
-                    BtnStart.Content = "暂停监控";
-                    WindowTitle.Content = $"{Properties.Resources.AppName}  -  正在监控...";
-                    WindowIcon.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/Icon_Running.ico", UriKind.RelativeOrAbsolute));
                 }
                 else
                 {
-                    MessageBox.Show("请检查路径。", "提示", MessageBoxButton.OK);
+                    MessageBox.Show("请检查路径。", Properties.Resources.AppName, MessageBoxButton.OK);
                 }
             }
         }
 
-
-        private void StartSync()
+        private void BtnSync_Click(object sender, RoutedEventArgs e)
         {
             watcher.EnableRaisingEvents = false;
-            foreach (string path in syncingList)
+            for (int i = 0; i < syncingList.Count; i++)
             {
-                SyncFile(path);
+                ShowProgressBar(i + 1, syncingList.Count + 1);
+                string path = syncingList[i];
+                SyncFile(path, strSyncerPath);
             }
+
             syncingList.Clear();
 
+            ShowProgressBar(1, 1);
             foreach (string path in removingList)
             {
-
+                RemoveFile(path);
             }
             removingList.Clear();
 
+            HideProgressBar();
 
             if (watchingState)
                 watcher.EnableRaisingEvents = true;
@@ -591,7 +714,7 @@ namespace YesChefTiffWatcher
                 str.AppendLine(path);
             }
 
-            MessageBox.Show(removingList.Count == 0 ? "没有待同步文件。" : str.ToString(), "待同步文件列表");
+            MessageBox.Show(syncingList.Count == 0 ? "没有待同步文件。" : str.ToString(), "待同步文件列表");
         }
 
         private void TextBlockRemove_Click(object sender, MouseButtonEventArgs e)
@@ -607,27 +730,107 @@ namespace YesChefTiffWatcher
 
         private void TextBlockClear_Click(object sender, MouseButtonEventArgs e)
         {
-            syncingList.Clear();
-            removingList.Clear();
-            TextBlockSync.Text = "待同步文件：[0]";
-            TextBlockRemove.Text = "待删除文件：[0]";
+            if (MessageBox.Show("是否清除待同步文件列表？", Properties.Resources.AppName, MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            {
+                syncingList.Clear();
+                removingList.Clear();
+                TextBlockSync.Text = "待同步文件：[0]";
+                TextBlockRemove.Text = "待删除文件：[0]";
+            }
         }
 
         private void Window_Deactivated(object sender, EventArgs e)
         {
             WindowShadowEffect.BlurRadius = 10;
-            //BtnClose.SetValue(StyleProperty, Application.Current.Resources["CaptionInactiveButtonStyle"]);
-            //BtnMinimize.SetValue(StyleProperty, Application.Current.Resources["CaptionInactiveButtonStyle"]);
         }
 
         private void MainWindow_OnActivated(object sender, EventArgs e)
         {
             WindowShadowEffect.BlurRadius = 20;
-            //Style style1 = Application.Current.Resources["CaptionCloseButtonStyle"] as Style;
-            //BtnClose.Style = style1;
+        }
 
-            //Style style2 = Application.Current.Resources["CaptionButtonStyle"] as Style;
-            //BtnMinimize.Style = style2;
+        private void ManualSyncFile_Click(object sender, RoutedEventArgs e)
+        {
+            StopWatcher();
+            CommonOpenFileDialog dialog = new CommonOpenFileDialog { IsFolderPicker = false, Multiselect = false, Title = $"{Properties.Resources.AppName}  -  选择需要同步的文件" };
+            if (Directory.Exists(strWatcherPath))
+            {
+                dialog.InitialDirectory = strWatcherPath;
+            }
+            dialog.Filters.Add(new CommonFileDialogFilter("TIFF 文件", "*.tif"));
+            CommonFileDialogResult result = dialog.ShowDialog();
+            if (result != CommonFileDialogResult.Ok) return;
+
+            string path = dialog.FileName;
+            if (!File.Exists(path)) return;
+
+            CommonOpenFileDialog dialog2 = new CommonOpenFileDialog { IsFolderPicker = true, Multiselect = false, Title = $"{Properties.Resources.AppName}  -  选择目标文件夹：" };
+            if (Directory.Exists(strSyncerPath))
+            {
+                dialog2.InitialDirectory = strSyncerPath;
+            }
+            CommonFileDialogResult result2 = dialog2.ShowDialog();
+            if (result2 != CommonFileDialogResult.Ok) return;
+            string path2 = dialog2.FileName;
+            if (!Directory.Exists(path2)) return;
+
+            if (SyncFile(path, path2))
+            {
+                ShowTrayMessage("已同步选择的文件。");
+            }
+        }
+
+        private void ManualSyncFolder_Click(object sender, RoutedEventArgs e)
+        {
+            StopWatcher();
+            CommonOpenFileDialog dialog = new CommonOpenFileDialog { IsFolderPicker = true, Multiselect = false, Title = $"{Properties.Resources.AppName}  -  选择原始文件夹" };
+            CommonFileDialogResult result = dialog.ShowDialog();
+            if (result != CommonFileDialogResult.Ok) return;
+
+            string dir = dialog.FileName;
+            if (!Directory.Exists(dir)) return;
+            string[] files = Directory.GetFiles(dir, "*.tif", SearchOption.AllDirectories);
+            if (files.Length == 0)
+            {
+                MessageBox.Show("没有发现 *.tif 文件。", Properties.Resources.AppName, MessageBoxButton.OK);
+                return;
+            }
+
+            CommonOpenFileDialog dialog2 = new CommonOpenFileDialog { IsFolderPicker = true, Multiselect = false, Title = $"{Properties.Resources.AppName}  -  选择目标文件夹：" };
+            if (Directory.Exists(strSyncerPath))
+            {
+                dialog2.InitialDirectory = strSyncerPath;
+            }
+            CommonFileDialogResult result2 = dialog2.ShowDialog();
+            if (result2 != CommonFileDialogResult.Ok) return;
+            string path2 = dialog.FileName;
+            if (!Directory.Exists(path2)) return;
+
+            int count = 0;
+            for (int i = 0; i < files.Length; i++)
+            {
+                ShowProgressBar(i + 1, files.Length);
+                string p = files[i];
+                if (SyncFile(p, path2))
+                {
+                    count++;
+                }
+            }
+
+            HideProgressBar();
+            ShowTrayMessage($"已同步 {count} 个的文件。");
+        }
+
+        private void ShowProgressBar(int index, int count)
+        {
+            ProgressBar.Height = 4;
+            double width = index * progressBarWidth / count;
+            ProgressBar.Width = width;
+        }
+
+        private void HideProgressBar()
+        {
+            ProgressBar.Height = 0;
         }
     }
 }
