@@ -161,7 +161,6 @@ namespace YesChefTiffWatcher
         private void InitializeSystemTray()
         {
             notifyIcon = new System.Windows.Forms.NotifyIcon { Text = Properties.Resources.AppName };
-
             syncMenuItem = new System.Windows.Forms.MenuItem("同步");
             syncMenuItem.Enabled = false;
             syncMenuItem.Click += Icon_SyncClick;
