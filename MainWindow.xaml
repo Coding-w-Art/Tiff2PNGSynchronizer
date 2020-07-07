@@ -139,9 +139,12 @@
             </Grid>
 
             <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left" Margin="24, 208, 24, 0" Orientation="Horizontal">
-                <TextBlock x:Name="TextBlockSync" Text="待同步文件：[0]" TextDecorations="Underline" Foreground="DodgerBlue" VerticalAlignment="Top" HorizontalAlignment="Left" Cursor="Hand" IsHitTestVisible="True" MouseLeftButtonUp="TextBlockSync_Click"/>
-                <TextBlock x:Name="TextBlockRemove" Text="待删除文件：[0]" Margin="20, 0, 0, 0" TextDecorations="Underline" Foreground="Crimson" VerticalAlignment="Top" HorizontalAlignment="Left" Cursor="Hand" IsHitTestVisible="True" MouseLeftButtonUp="TextBlockRemove_Click"/>
-                <TextBlock x:Name="TextBlockClear" Text="清除..." Margin="20, 0, 0, 0" TextDecorations="Underline" Foreground="#999999" VerticalAlignment="Top" HorizontalAlignment="Left" Cursor="Hand" IsHitTestVisible="True" MouseLeftButtonUp="TextBlockClear_Click"/>
+                <CheckBox x:Name="CheckBoxRealTime" Content="实时同步" HorizontalAlignment="Right" VerticalAlignment="Top" Foreground="#999999" BorderBrush="#FF3F3F43" VerticalContentAlignment="Center" Background="#FFF1F1F1" Click="RealTime_Click"/>
+                <StackPanel x:Name="PanelList" Orientation="Horizontal">
+                    <TextBlock x:Name="TextBlockSync" Text="" Margin="20, 0, 0, 0" TextDecorations="Underline" Foreground="DodgerBlue" VerticalAlignment="Top" HorizontalAlignment="Left" Cursor="Hand" IsHitTestVisible="True" MouseLeftButtonUp="TextBlockSync_Click"/>
+                    <TextBlock x:Name="TextBlockRemove" Text="" Margin="20, 0, 0, 0" TextDecorations="Underline" Foreground="Crimson" VerticalAlignment="Top" HorizontalAlignment="Left" Cursor="Hand" IsHitTestVisible="True" MouseLeftButtonUp="TextBlockRemove_Click"/>
+                    <TextBlock x:Name="TextBlockClear" Text="" Margin="20, 0, 0, 0" TextDecorations="Underline" Foreground="#999999" VerticalAlignment="Top" HorizontalAlignment="Left" Cursor="Hand" IsHitTestVisible="True" MouseLeftButtonUp="TextBlockClear_Click"/>
+                </StackPanel>
             </StackPanel>
         </Grid>
 

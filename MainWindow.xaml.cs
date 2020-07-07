@@ -34,6 +34,7 @@ namespace YesChefTiffWatcher
 
         string strWatcherPath;
         string strSyncerPath;
+        private bool realTimeSync;
         bool watchingState = false;
         bool readyForWatch = false;
         bool syncingState = false;
@@ -51,7 +52,8 @@ namespace YesChefTiffWatcher
             InitializeWatcher();
 
             progressBarWidth = ProgressBar.Width;
-            FileSystemWatcher watcher = new FileSystemWatcher();
+            realTimeSync = Properties.Settings.Default.RealTime;
+            PanelList.Visibility = realTimeSync ? Visibility.Collapsed : Visibility.Visible;
 
             strWatcherPath = Properties.Settings.Default.WatcherPath;
             if (!string.IsNullOrEmpty(strWatcherPath))
@@ -109,6 +111,7 @@ namespace YesChefTiffWatcher
             watchingState = true;
             watcher.EnableRaisingEvents = true;
             notifyIcon.Icon = new Icon("../../Resources/Icon_Running.ico");
+            notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(new[] { showMenuItem, syncMenuItem, stopMenuItem, exitMenuItem });
 
             if (updateUI)
             {
@@ -128,6 +131,7 @@ namespace YesChefTiffWatcher
             watchingState = false;
             watcher.EnableRaisingEvents = false;
             notifyIcon.Icon = new Icon("../../Resources/Icon_StopRunning.ico");
+            notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(new[] { showMenuItem, syncMenuItem, resumeMenuItem, exitMenuItem });
 
             if (updateUI)
             {
@@ -166,11 +170,11 @@ namespace YesChefTiffWatcher
             stopMenuItem = new System.Windows.Forms.MenuItem("暂停监控");
             stopMenuItem.Click += Icon_StopClick;
             resumeMenuItem = new System.Windows.Forms.MenuItem("开始监控");
-            stopMenuItem.Click += Icon_ResumeClick;
+            resumeMenuItem.Click += Icon_ResumeClick;
             exitMenuItem = new System.Windows.Forms.MenuItem("退出");
             exitMenuItem.Click += Icon_ExitClick;
-            notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(new[] { showMenuItem, syncMenuItem, stopMenuItem, exitMenuItem });
-            notifyIcon.Icon = new System.Drawing.Icon("../../Resources/Icon.ico");
+            notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(new[] { showMenuItem, syncMenuItem, resumeMenuItem, exitMenuItem });
+            notifyIcon.Icon = new Icon("../../Resources/Icon.ico");
             notifyIcon.Visible = true;
             notifyIcon.DoubleClick += Icon_ShowClick;
         }
@@ -188,13 +192,15 @@ namespace YesChefTiffWatcher
                 syncMenuItem.Text = "同步";
                 syncMenuItem.Enabled = false;
             }
-            notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(new[] { showMenuItem, syncMenuItem, stopMenuItem, exitMenuItem });
+
+            notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(new[] { showMenuItem, syncMenuItem, watchingState ? stopMenuItem : resumeMenuItem, exitMenuItem });
 
             if (updateUI)
             {
                 BtnSync.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
-                TextBlockSync.Text = $"待同步文件：[{syncingList.Count}]";
-                TextBlockRemove.Text = $"待删除文件：[{removingList.Count}]";
+                TextBlockSync.Text = syncingList.Count > 0 ? $"待同步文件：[{syncingList.Count}]" : "";
+                TextBlockRemove.Text = removingList.Count > 0 ? $"待删除文件：[{removingList.Count}]" : "";
+                TextBlockClear.Text = count > 0 ? "清除..." : "";
             }
         }
 
@@ -333,8 +339,9 @@ namespace YesChefTiffWatcher
                 updateUI = true;
                 int count = syncingList.Count + removingList.Count;
                 BtnSync.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
-                TextBlockSync.Text = $"待同步文件：[{syncingList.Count}]";
-                TextBlockRemove.Text = $"待删除文件：[{removingList.Count}]";
+                TextBlockSync.Text = syncingList.Count > 0 ? $"待同步文件：[{syncingList.Count}]" : "";
+                TextBlockRemove.Text = removingList.Count > 0 ? $"待删除文件：[{removingList.Count}]" : "";
+                TextBlockClear.Text = count > 0 ? "清除..." : "";
 
                 if (watchingState)
                 {
@@ -376,8 +383,15 @@ namespace YesChefTiffWatcher
                 return;
 
             string path = e.FullPath;
-
             string newPath = path.Replace(strWatcherPath, strSyncerPath);
+
+            if (realTimeSync)
+            {
+                if (SyncFile(path, strSyncerPath))
+                    ShowTrayMessage($"创建文件：{newPath}");
+                return;
+            }
+
             if (newPath != path)
             {
                 newPath = Path.ChangeExtension(newPath, ".png");
@@ -387,9 +401,9 @@ namespace YesChefTiffWatcher
                 }
             }
 
-            if (!syncingList.Contains(e.FullPath))
+            if (!syncingList.Contains(path))
             {
-                syncingList.Add(e.FullPath);
+                syncingList.Add(path);
             }
 
             RefreshSystemTray();
@@ -404,6 +418,20 @@ namespace YesChefTiffWatcher
             string newPath = path.Replace(strWatcherPath, strSyncerPath);
             if (newPath == path)
                 return;
+
+            if (realTimeSync)
+            {
+                if (File.Exists(newPath))
+                {
+                    FileSystem.DeleteFile(newPath, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                }
+                if (File.Exists(newPath + ".meta"))
+                {
+                    FileSystem.DeleteFile(newPath + ".meta", UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                }
+                ShowTrayMessage($"删除文件：{newPath}");
+                return;
+            }
 
             if (File.Exists(newPath) && !removingList.Contains(newPath))
             {
@@ -460,7 +488,7 @@ namespace YesChefTiffWatcher
             {
                 if (File.Exists(newPath))
                 {
-                    File.Delete(newPath);
+                    FileSystem.DeleteFile(newPath, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
                 }
                 File.Move(oldPath, newPath);
             }
@@ -471,7 +499,7 @@ namespace YesChefTiffWatcher
             {
                 if (File.Exists(newMeta))
                 {
-                    File.Delete(newMeta);
+                    FileSystem.DeleteFile(newMeta, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
                 }
                 File.Move(oldMeta, newMeta);
             }
@@ -500,7 +528,7 @@ namespace YesChefTiffWatcher
             {
                 if (File.Exists(newPath))
                 {
-                    File.Delete(newPath);
+                    FileSystem.DeleteFile(newPath, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
                 }
             }
             else
@@ -535,9 +563,10 @@ namespace YesChefTiffWatcher
             }
             image.Save(newPath, GetEncoderInfo("image/png"), eps);
 
+            image.Dispose();
             if (deleteOriginal)
             {
-                File.Delete(path);
+                FileSystem.DeleteFile(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
             }
 
             return true;
@@ -574,7 +603,6 @@ namespace YesChefTiffWatcher
             if (watchingState)
             {
                 StopWatcher();
-                
             }
             else
             {
@@ -616,8 +644,9 @@ namespace YesChefTiffWatcher
                 watcher.EnableRaisingEvents = true;
 
             BtnSync.Visibility = Visibility.Collapsed;
-            TextBlockSync.Text = "待同步文件：[0]";
-            TextBlockRemove.Text = "待删除文件：[0]";
+            TextBlockSync.Text = "";
+            TextBlockRemove.Text = "";
+            TextBlockClear.Text = "";
         }
 
         private void MoveWindow(object sender, MouseButtonEventArgs e)
@@ -734,8 +763,8 @@ namespace YesChefTiffWatcher
             {
                 syncingList.Clear();
                 removingList.Clear();
-                TextBlockSync.Text = "待同步文件：[0]";
-                TextBlockRemove.Text = "待删除文件：[0]";
+                TextBlockSync.Text = "";
+                TextBlockRemove.Text = "";
             }
         }
 
@@ -784,6 +813,10 @@ namespace YesChefTiffWatcher
         {
             StopWatcher();
             CommonOpenFileDialog dialog = new CommonOpenFileDialog { IsFolderPicker = true, Multiselect = false, Title = $"{Properties.Resources.AppName}  -  选择原始文件夹" };
+            if (Directory.Exists(strWatcherPath))
+            {
+                dialog.InitialDirectory = strWatcherPath;
+            }
             CommonFileDialogResult result = dialog.ShowDialog();
             if (result != CommonFileDialogResult.Ok) return;
 
@@ -818,7 +851,7 @@ namespace YesChefTiffWatcher
             }
 
             HideProgressBar();
-            ShowTrayMessage($"已同步 {count} 个的文件。");
+            ShowTrayMessage($"已同步 {count} 个文件。");
         }
 
         private void ShowProgressBar(int index, int count)
@@ -831,6 +864,23 @@ namespace YesChefTiffWatcher
         private void HideProgressBar()
         {
             ProgressBar.Height = 0;
+        }
+
+        private void RealTime_Click(object sender, RoutedEventArgs e)
+        {
+            if (CheckBoxRealTime.IsChecked == true)
+            {
+                realTimeSync = true;
+                PanelList.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                realTimeSync = false;
+                PanelList.Visibility = Visibility.Visible;
+            }
+
+            Properties.Settings.Default.RealTime = realTimeSync;
+            Properties.Settings.Default.Save();
         }
     }
 }

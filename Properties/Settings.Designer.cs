@@ -46,5 +46,17 @@ namespace YesChefTiffWatcher.Properties {
                 this["SyncerPath"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool RealTime {
+            get {
+                return ((bool)(this["RealTime"]));
+            }
+            set {
+                this["RealTime"] = value;
+            }
+        }
     }
 }
