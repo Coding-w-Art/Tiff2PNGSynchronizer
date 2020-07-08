@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Text;
 using System.Windows;
@@ -15,6 +17,7 @@ using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using Color = System.Windows.Media.Color;
 using Image = System.Drawing.Image;
+using PixelFormat = System.Drawing.Imaging.PixelFormat;
 using SearchOption = System.IO.SearchOption;
 
 namespace YesChefTiffWatcher
@@ -45,16 +48,57 @@ namespace YesChefTiffWatcher
         List<string> syncingList = new List<string>();
         List<string> removingList = new List<string>();
 
+
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct SHFILEINFO
+        {
+            public IntPtr hIcon;                                        //文件的图标句柄
+            public int iIcon;                                           //文件图标的系统索引号
+            public uint dwAttributes;                                   //文件的属性值
+
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+            public string szDisplayName;                                //文件的显示名
+
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)]
+            public string szTypeName;                                   //文件的类型名
+        }
+
+        [DllImport("shell32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        public static extern int SHGetFileInfo(string strFilePath, uint dwFileAttributes, ref SHFILEINFO lpFileInfo, uint cbFileInfoSize, uint uFlags);
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool DestroyIcon(IntPtr hIcon);
+        //获取图标
+        private const uint SHGFI_ICON = 0x100;
+        //大图标 32 x 32
+        private const uint SHGFI_LARGEICON = 0x0;
+
+        //小图标 16 x 16
+        private const uint SHGFI_SMALLICON = 0x1;
+
+        //使用use passed dwFileAttribute
+        private const uint SHGFI_USEFILEATTRIBUTES = 0x10;
+
+        private const uint FILE_ATTRIBUTE_NORMAL = 0x80;
+        private const uint FILE_ATTRIBUTE_DIRECTORY = 0x10;
+        private const uint SHGFI_DISPLAYNAME = 0x200;
+        private const uint SHGFI_SYSICONINDEX = 0x400;
+
+
         public MainWindow()
         {
             InitializeComponent();
             InitializeSystemTray();
             InitializeWatcher();
 
+            //BitmapSource source1 = Imaging.CreateBitmapSourceFromHIcon(icon.Handle, new Int32Rect(0, 0, 32, 32), BitmapSizeOptions.FromWidth(32));
+
+            window.Title = Properties.Resources.AppName;
             WindowIcon.Source = new BitmapImage(new Uri("./Resources/Icon.ico", UriKind.RelativeOrAbsolute));
 
             progressBarWidth = ProgressBar.Width;
             realTimeSync = Properties.Settings.Default.RealTime;
+            CheckBoxRealTime.IsChecked = realTimeSync;
             PanelList.Visibility = realTimeSync ? Visibility.Collapsed : Visibility.Visible;
 
             strWatcherPath = Properties.Settings.Default.WatcherPath;
@@ -65,6 +109,10 @@ namespace YesChefTiffWatcher
                 if (!Directory.Exists(strWatcherPath))
                 {
                     TextBoxWatcher.BorderBrush = new SolidColorBrush(Colors.Red);
+                }
+                else
+                {
+                    ImageWatcher.Source = GetIcon(strWatcherPath);
                 }
             }
 
@@ -77,10 +125,33 @@ namespace YesChefTiffWatcher
                 {
                     TextBoxSyncer.BorderBrush = new SolidColorBrush(Colors.Red);
                 }
+                else
+                {
+                    ImageSyncer.Source = GetIcon(strWatcherPath);
+                }
             }
 
             readyForWatch = CheckReadyToWatch();
             CheckBoxAutoRun.IsChecked = GetAutoRunState();
+        }
+
+        public static ImageSource GetIcon(string strFilePath)
+        {
+            uint uFlag = SHGFI_ICON | SHGFI_USEFILEATTRIBUTES | SHGFI_DISPLAYNAME | SHGFI_LARGEICON;
+            uint uAttribute = FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_DIRECTORY;
+
+            SHFILEINFO fileInfo = new SHFILEINFO();
+            if (0 != SHGetFileInfo(strFilePath, uAttribute, ref fileInfo, (uint)Marshal.SizeOf(typeof(SHFILEINFO)), uFlag))
+            {
+                if (fileInfo.hIcon != IntPtr.Zero)
+                {
+                    BitmapSource bmpSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(fileInfo.hIcon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                    DestroyIcon(fileInfo.hIcon);
+                    return bmpSource;
+                }
+            }
+
+            return null;
         }
 
         private void CommandBinding_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -117,9 +188,11 @@ namespace YesChefTiffWatcher
 
             if (updateUI)
             {
-                PanelOption.Visibility = Visibility.Collapsed;
+                CheckBoxRealTime.IsEnabled = false;
                 BtnStart.Content = "暂停监控";
-                WindowTitle.Content = $"{Properties.Resources.AppName}  -  正在监控...";
+                string name = $"{Properties.Resources.AppName}  -  正在监控...";
+                WindowTitle.Content = name;
+                window.Title = name;
                 WindowIcon.Source = new BitmapImage(new Uri("./Resources/Icon_Running.ico", UriKind.RelativeOrAbsolute));
             }
         }
@@ -138,9 +211,10 @@ namespace YesChefTiffWatcher
 
             if (updateUI)
             {
-                PanelOption.Visibility = Visibility.Visible;
+                CheckBoxRealTime.IsEnabled = true;
                 BtnStart.Content = "开始监控";
-                WindowTitle.Content = $"{Properties.Resources.AppName}";
+                WindowTitle.Content = Properties.Resources.AppName;
+                window.Title = Properties.Resources.AppName;
                 WindowIcon.Source = new BitmapImage(new Uri("./Resources/Icon.ico", UriKind.RelativeOrAbsolute));
             }
         }
@@ -165,7 +239,7 @@ namespace YesChefTiffWatcher
         private void InitializeSystemTray()
         {
             notifyIcon = new System.Windows.Forms.NotifyIcon { Text = Properties.Resources.AppName };
-            syncMenuItem = new System.Windows.Forms.MenuItem("同步");
+            syncMenuItem = new System.Windows.Forms.MenuItem("待同步 [0]");
             syncMenuItem.Enabled = false;
             syncMenuItem.Click += Icon_SyncClick;
             showMenuItem = new System.Windows.Forms.MenuItem("打开");
@@ -176,7 +250,7 @@ namespace YesChefTiffWatcher
             resumeMenuItem.Click += Icon_ResumeClick;
             exitMenuItem = new System.Windows.Forms.MenuItem("退出");
             exitMenuItem.Click += Icon_ExitClick;
-            notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(new[] { showMenuItem, syncMenuItem, resumeMenuItem, exitMenuItem });
+            notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(new[] { /*showMenuItem,*/ syncMenuItem, resumeMenuItem, exitMenuItem });
             notifyIcon.Icon = new Icon("./Resources/Icon.ico");
             notifyIcon.Visible = true;
             notifyIcon.DoubleClick += Icon_ShowClick;
@@ -187,20 +261,24 @@ namespace YesChefTiffWatcher
             int count = syncingList.Count + removingList.Count;
             if (count > 0)
             {
-                syncMenuItem.Text = $"同步 [{count}]";
-                syncMenuItem.Enabled = true;
+                syncMenuItem.Text = $"待同步 [{count}]";
             }
             else
             {
-                syncMenuItem.Text = "同步";
-                syncMenuItem.Enabled = false;
+                syncMenuItem.Text = "待同步 [0]";
             }
 
-            notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(new[] { showMenuItem, syncMenuItem, watchingState ? stopMenuItem : resumeMenuItem, exitMenuItem });
+            if (watchingState)
+            {
+                notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(new[] { syncMenuItem, stopMenuItem, exitMenuItem });
+            }
+            else
+            {
+                notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(new[] { syncMenuItem, resumeMenuItem, exitMenuItem });
+            }
 
             if (updateUI)
             {
-                PanelOption.Visibility = watchingState ? Visibility.Collapsed : Visibility.Visible;
                 BtnSync.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
                 TextBlockSync.Text = syncingList.Count > 0 ? $"待同步文件：[{syncingList.Count}]" : "";
                 TextBlockRemove.Text = removingList.Count > 0 ? $"待删除文件：[{removingList.Count}]" : "";
@@ -222,9 +300,10 @@ namespace YesChefTiffWatcher
 
         private void Icon_ShowClick(object sender, EventArgs e)
         {
+            StopWatcher();
             window.ShowInTaskbar = true;
             WindowState = WindowState.Normal;
-            Application.Current.MainWindow.Activate();
+            window.Activate();
         }
 
         private void Icon_StopClick(object sender, EventArgs e)
@@ -237,6 +316,9 @@ namespace YesChefTiffWatcher
             if (!Directory.Exists(strWatcherPath))
                 return;
             StartWatcher();
+
+            if (WindowState == WindowState.Normal)
+                WindowState = WindowState.Minimized;
         }
 
         private void Icon_ExitClick(object sender, EventArgs e)
@@ -346,19 +428,23 @@ namespace YesChefTiffWatcher
                 TextBlockSync.Text = syncingList.Count > 0 ? $"待同步文件：[{syncingList.Count}]" : "";
                 TextBlockRemove.Text = removingList.Count > 0 ? $"待删除文件：[{removingList.Count}]" : "";
                 TextBlockClear.Text = count > 0 ? "清除..." : "";
+                PanelList.Visibility = realTimeSync ? Visibility.Collapsed : Visibility.Visible;
+                CheckBoxRealTime.IsEnabled = !watchingState;
+
 
                 if (watchingState)
                 {
-                    PanelOption.Visibility = Visibility.Collapsed;
                     BtnStart.Content = "暂停监控";
-                    WindowTitle.Content = $"{Properties.Resources.AppName}  -  正在监控...";
+                    string name = $"{Properties.Resources.AppName}  -  正在监控...";
+                    WindowTitle.Content = name;
+                    window.Title = name;
                     WindowIcon.Source = new BitmapImage(new Uri("./Resources/Icon_Running.ico", UriKind.RelativeOrAbsolute));
                 }
                 else
                 {
-                    PanelOption.Visibility = Visibility.Visible;
                     BtnStart.Content = "开始监控";
-                    WindowTitle.Content = $"{Properties.Resources.AppName}";
+                    WindowTitle.Content = Properties.Resources.AppName;
+                    window.Title = Properties.Resources.AppName;
                     WindowIcon.Source = new BitmapImage(new Uri("./Resources/Icon.ico", UriKind.RelativeOrAbsolute));
                 }
             }
@@ -518,7 +604,6 @@ namespace YesChefTiffWatcher
             notifyIcon.ShowBalloonTip(1000);
         }
 
-
         private bool SyncFile(string path, string destPath)
         {
             if (!Directory.Exists(destPath))
@@ -555,21 +640,53 @@ namespace YesChefTiffWatcher
                 File.Move(newMeta, newPath + ".meta");
             }
 
-            Image image = Image.FromFile(path);
-            EncoderParameters eps = new EncoderParameters(1);
-            if (Image.IsAlphaPixelFormat(image.PixelFormat))
-            {
-                var ep = new EncoderParameter(System.Drawing.Imaging.Encoder.ColorDepth, 32L);
-                eps.Param[0] = ep;
-            }
-            else
-            {
-                var ep = new EncoderParameter(System.Drawing.Imaging.Encoder.ColorDepth, 24L);
-                eps.Param[0] = ep;
-            }
-            image.Save(newPath, GetEncoderInfo("image/png"), eps);
+            //FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            //Image image = realTimeSync ? Image.FromStream(stream) : Image.FromFile(path);
+            //stream.Close();
+            //stream.Dispose();
 
-            image.Dispose();
+            if (!File.Exists(path))
+                return false;
+
+            Bitmap bitmap = new Bitmap(path);
+
+            EncoderParameters eps = new EncoderParameters(1);
+            if (bitmap.PixelFormat == PixelFormat.Format32bppArgb)
+            {
+                eps.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.ColorDepth, 32L);
+                bitmap.Save(newPath, GetEncoderInfo("image/png"), eps);
+            }
+            else if (bitmap.PixelFormat == PixelFormat.Format24bppRgb)
+            {
+                eps.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.ColorDepth, 24L); bitmap.Save(newPath, GetEncoderInfo("image/png"), eps);
+            }
+            else if (bitmap.PixelFormat == PixelFormat.Format64bppArgb)
+            {
+                Bitmap bmNew = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format32bppArgb);
+                bmNew.SetResolution(bitmap.VerticalResolution, bitmap.VerticalResolution);
+                Graphics g = Graphics.FromImage(bmNew);
+                g.DrawImage(bitmap, 0, 0);
+                g.Dispose();
+
+                eps.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.ColorDepth, 32L);
+                bmNew.Save(newPath, GetEncoderInfo("image/png"), eps);
+                bmNew.Dispose();
+            }
+            else if (bitmap.PixelFormat == PixelFormat.Format48bppRgb)
+            {
+                Bitmap bmNew = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format24bppRgb);
+                bmNew.SetResolution(bitmap.VerticalResolution, bitmap.VerticalResolution);
+                Graphics g = Graphics.FromImage(bmNew);
+                g.DrawImage(bitmap, 0, 0);
+                g.Dispose();
+
+                eps.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.ColorDepth, 24L);
+                bmNew.Save(newPath, GetEncoderInfo("image/png"), eps);
+                bmNew.Dispose();
+
+            }
+            bitmap.Dispose();
+
             if (deleteOriginal)
             {
                 FileSystem.DeleteFile(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
@@ -580,7 +697,6 @@ namespace YesChefTiffWatcher
 
         private static ImageCodecInfo GetEncoderInfo(string mimeType)
         {
-            int i;
             ImageCodecInfo[] encoders = ImageCodecInfo.GetImageEncoders();
             foreach (ImageCodecInfo encoder in encoders)
             {
@@ -887,6 +1003,24 @@ namespace YesChefTiffWatcher
 
             Properties.Settings.Default.RealTime = realTimeSync;
             Properties.Settings.Default.Save();
+        }
+
+        private void Folder_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (sender == ImageWatcher)
+            {
+                if (Directory.Exists(strWatcherPath))
+                {
+                    Process.Start(strWatcherPath);
+                }
+            }
+            else if (sender == ImageSyncer)
+            {
+                if (Directory.Exists(strSyncerPath))
+                {
+                    Process.Start(strSyncerPath);
+                }
+            }
         }
     }
 }
