@@ -4,9 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:YesChefTiffWatcher"
-        mc:Ignorable="d"
-        x:Name="window"
-        Title="Yes! Chef 资源同步工具" Height="360" Width="580" Background="Transparent" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize" StateChanged="Window_StateChanged" Closing="Window_Closing" Icon="/Resources/Icon.ico" AllowsTransparency="True" WindowStyle="None"
+        mc:Ignorable="d" x:Name="window" Height="360" Width="580" Background="Transparent" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize" StateChanged="Window_StateChanged" Closing="Window_Closing" AllowsTransparency="True" WindowStyle="None"
         Activated="MainWindow_OnActivated" Deactivated="Window_Deactivated" ShowInTaskbar="True">
     
     <WindowChrome.WindowChrome>
@@ -105,7 +103,7 @@
         <Grid Margin="20" Grid.Row="0" Height="30" Background="#FF2D2D30" VerticalAlignment="Top" MouseDown="MoveWindow">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
                 <!--App icon-->
-                <Image x:Name="WindowIcon" Source="Resources/Icon.ico" Width="18" Margin="4" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                <Image x:Name="WindowIcon" Source="Resources/Icon.ico" Width="18" Margin="8, 4, 4, 4" HorizontalAlignment="Left" VerticalAlignment="Center" />
                 <Label x:Name="WindowTitle" Content="TIFF > PNG 资源同步工具" FontSize="12" VerticalAlignment="Center" Foreground="White"/>
             </StackPanel>
 
@@ -138,7 +136,7 @@
                 <Rectangle x:Name="ProgressBar" HorizontalAlignment="Stretch" Height="0" Fill="#FF007ACC"/>
             </Grid>
 
-            <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left" Margin="24, 208, 24, 0" Orientation="Horizontal">
+            <StackPanel x:Name="PanelOption" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="24, 208, 24, 0" Orientation="Horizontal">
                 <CheckBox x:Name="CheckBoxRealTime" Content="实时同步" HorizontalAlignment="Right" VerticalAlignment="Top" Foreground="#999999" BorderBrush="#FF3F3F43" VerticalContentAlignment="Center" Background="#FFF1F1F1" Click="RealTime_Click"/>
                 <StackPanel x:Name="PanelList" Orientation="Horizontal">
                     <TextBlock x:Name="TextBlockSync" Text="" Margin="20, 0, 0, 0" TextDecorations="Underline" Foreground="DodgerBlue" VerticalAlignment="Top" HorizontalAlignment="Left" Cursor="Hand" IsHitTestVisible="True" MouseLeftButtonUp="TextBlockSync_Click"/>

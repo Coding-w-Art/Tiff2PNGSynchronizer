@@ -51,6 +51,8 @@ namespace YesChefTiffWatcher
             InitializeSystemTray();
             InitializeWatcher();
 
+            WindowIcon.Source = new BitmapImage(new Uri("./Resources/Icon.ico", UriKind.RelativeOrAbsolute));
+
             progressBarWidth = ProgressBar.Width;
             realTimeSync = Properties.Settings.Default.RealTime;
             PanelList.Visibility = realTimeSync ? Visibility.Collapsed : Visibility.Visible;
@@ -110,14 +112,15 @@ namespace YesChefTiffWatcher
             watcher.Path = strWatcherPath;
             watchingState = true;
             watcher.EnableRaisingEvents = true;
-            notifyIcon.Icon = new Icon("../../Resources/Icon_Running.ico");
+            notifyIcon.Icon = new Icon("./Resources/Icon_Running.ico");
             notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(new[] { showMenuItem, syncMenuItem, stopMenuItem, exitMenuItem });
 
             if (updateUI)
             {
+                PanelOption.Visibility = Visibility.Collapsed;
                 BtnStart.Content = "暂停监控";
                 WindowTitle.Content = $"{Properties.Resources.AppName}  -  正在监控...";
-                WindowIcon.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/Icon_Running.ico", UriKind.RelativeOrAbsolute));
+                WindowIcon.Source = new BitmapImage(new Uri("./Resources/Icon_Running.ico", UriKind.RelativeOrAbsolute));
             }
         }
 
@@ -130,14 +133,15 @@ namespace YesChefTiffWatcher
 
             watchingState = false;
             watcher.EnableRaisingEvents = false;
-            notifyIcon.Icon = new Icon("../../Resources/Icon_StopRunning.ico");
+            notifyIcon.Icon = new Icon("./Resources/Icon_StopRunning.ico");
             notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(new[] { showMenuItem, syncMenuItem, resumeMenuItem, exitMenuItem });
 
             if (updateUI)
             {
+                PanelOption.Visibility = Visibility.Visible;
                 BtnStart.Content = "开始监控";
                 WindowTitle.Content = $"{Properties.Resources.AppName}";
-                WindowIcon.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/Icon.ico", UriKind.RelativeOrAbsolute));
+                WindowIcon.Source = new BitmapImage(new Uri("./Resources/Icon.ico", UriKind.RelativeOrAbsolute));
             }
         }
 
@@ -173,7 +177,7 @@ namespace YesChefTiffWatcher
             exitMenuItem = new System.Windows.Forms.MenuItem("退出");
             exitMenuItem.Click += Icon_ExitClick;
             notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(new[] { showMenuItem, syncMenuItem, resumeMenuItem, exitMenuItem });
-            notifyIcon.Icon = new Icon("../../Resources/Icon.ico");
+            notifyIcon.Icon = new Icon("./Resources/Icon.ico");
             notifyIcon.Visible = true;
             notifyIcon.DoubleClick += Icon_ShowClick;
         }
@@ -196,6 +200,7 @@ namespace YesChefTiffWatcher
 
             if (updateUI)
             {
+                PanelOption.Visibility = watchingState ? Visibility.Collapsed : Visibility.Visible;
                 BtnSync.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
                 TextBlockSync.Text = syncingList.Count > 0 ? $"待同步文件：[{syncingList.Count}]" : "";
                 TextBlockRemove.Text = removingList.Count > 0 ? $"待删除文件：[{removingList.Count}]" : "";
@@ -344,15 +349,17 @@ namespace YesChefTiffWatcher
 
                 if (watchingState)
                 {
+                    PanelOption.Visibility = Visibility.Collapsed;
                     BtnStart.Content = "暂停监控";
                     WindowTitle.Content = $"{Properties.Resources.AppName}  -  正在监控...";
-                    WindowIcon.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/Icon_Running.ico", UriKind.RelativeOrAbsolute));
+                    WindowIcon.Source = new BitmapImage(new Uri("./Resources/Icon_Running.ico", UriKind.RelativeOrAbsolute));
                 }
                 else
                 {
+                    PanelOption.Visibility = Visibility.Visible;
                     BtnStart.Content = "开始监控";
                     WindowTitle.Content = $"{Properties.Resources.AppName}";
-                    WindowIcon.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/Icon.ico", UriKind.RelativeOrAbsolute));
+                    WindowIcon.Source = new BitmapImage(new Uri("./Resources/Icon.ico", UriKind.RelativeOrAbsolute));
                 }
             }
         }
