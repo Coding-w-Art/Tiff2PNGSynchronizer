@@ -7,6 +7,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Text;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -90,8 +91,6 @@ namespace YesChefTiffWatcher
             InitializeComponent();
             InitializeSystemTray();
             InitializeWatcher();
-
-            //BitmapSource source1 = Imaging.CreateBitmapSourceFromHIcon(icon.Handle, new Int32Rect(0, 0, 32, 32), BitmapSizeOptions.FromWidth(32));
 
             window.Title = Properties.Resources.AppName;
             WindowIcon.Source = new BitmapImage(new Uri("./Resources/Icon.ico", UriKind.RelativeOrAbsolute));
@@ -293,7 +292,7 @@ namespace YesChefTiffWatcher
             watcher.Created += OnWatcherFileCreated;
             watcher.Deleted += OnWatcherFileDeleted;
             watcher.Renamed += OnWatcherFileRenamed;
-            watcher.NotifyFilter = NotifyFilters.Attributes | NotifyFilters.CreationTime | NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.Security;
+            watcher.NotifyFilter = NotifyFilters.Attributes | NotifyFilters.CreationTime | NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size;
             watcher.IncludeSubdirectories = true;
             watcher.EnableRaisingEvents = false;
         }
@@ -640,25 +639,66 @@ namespace YesChefTiffWatcher
                 File.Move(newMeta, newPath + ".meta");
             }
 
-            //FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            //Image image = realTimeSync ? Image.FromStream(stream) : Image.FromFile(path);
-            //stream.Close();
-            //stream.Dispose();
-
             if (!File.Exists(path))
                 return false;
 
-            Bitmap bitmap = new Bitmap(path);
+            if (realTimeSync)
+            {
+                int time = 0;
+                while (time <= 30000)
+                {
+                    try
+                    {
+                        using (StreamReader stream = new StreamReader(path))
+                        {
+                            Bitmap bitmap = new Bitmap(stream.BaseStream);
+                            ProcessImage(bitmap, newPath);
+                            bitmap.Dispose();
+                            stream.Close();
+                            stream.Dispose();
+                            break;
+                        }
+                    }
+                    catch
+                    {
+                        Thread.Sleep(100);
+                        time += 100;
+                    }
+                }
 
+                if (time >= 3000)
+                {
+                    ShowTrayMessage($"同步文件超时：{path}");
+                    return false;
+                }
+            }
+            else
+            {
+                Bitmap bitmap = new Bitmap(path);
+                ProcessImage(bitmap, newPath);
+                bitmap.Dispose();
+            }
+
+            if (deleteOriginal)
+            {
+                FileSystem.DeleteFile(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+            }
+
+            return true;
+        }
+
+        private void ProcessImage(Bitmap bitmap, string savePath)
+        {
             EncoderParameters eps = new EncoderParameters(1);
             if (bitmap.PixelFormat == PixelFormat.Format32bppArgb)
             {
                 eps.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.ColorDepth, 32L);
-                bitmap.Save(newPath, GetEncoderInfo("image/png"), eps);
+                bitmap.Save(savePath, GetEncoderInfo("image/png"), eps);
             }
             else if (bitmap.PixelFormat == PixelFormat.Format24bppRgb)
             {
-                eps.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.ColorDepth, 24L); bitmap.Save(newPath, GetEncoderInfo("image/png"), eps);
+                eps.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.ColorDepth, 24L);
+                bitmap.Save(savePath, GetEncoderInfo("image/png"), eps);
             }
             else if (bitmap.PixelFormat == PixelFormat.Format64bppArgb)
             {
@@ -669,7 +709,7 @@ namespace YesChefTiffWatcher
                 g.Dispose();
 
                 eps.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.ColorDepth, 32L);
-                bmNew.Save(newPath, GetEncoderInfo("image/png"), eps);
+                bmNew.Save(savePath, GetEncoderInfo("image/png"), eps);
                 bmNew.Dispose();
             }
             else if (bitmap.PixelFormat == PixelFormat.Format48bppRgb)
@@ -681,18 +721,9 @@ namespace YesChefTiffWatcher
                 g.Dispose();
 
                 eps.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.ColorDepth, 24L);
-                bmNew.Save(newPath, GetEncoderInfo("image/png"), eps);
+                bmNew.Save(savePath, GetEncoderInfo("image/png"), eps);
                 bmNew.Dispose();
-
             }
-            bitmap.Dispose();
-
-            if (deleteOriginal)
-            {
-                FileSystem.DeleteFile(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
-            }
-
-            return true;
         }
 
         private static ImageCodecInfo GetEncoderInfo(string mimeType)
