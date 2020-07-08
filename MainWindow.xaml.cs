@@ -16,6 +16,7 @@ using System.Windows.Media.Imaging;
 using Microsoft.VisualBasic.FileIO;
 using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Dialogs;
+using Microsoft.WindowsAPICodePack.Taskbar;
 using Color = System.Windows.Media.Color;
 using Image = System.Drawing.Image;
 using PixelFormat = System.Drawing.Imaging.PixelFormat;
@@ -34,7 +35,8 @@ namespace YesChefTiffWatcher
         System.Windows.Forms.MenuItem stopMenuItem;
         System.Windows.Forms.MenuItem resumeMenuItem;
         System.Windows.Forms.MenuItem exitMenuItem;
-        FileSystemWatcher watcher;
+        private FileSystemWatcher watcher;
+        private TaskbarManager taskbar;
 
         string strWatcherPath;
         string strSyncerPath;
@@ -92,6 +94,7 @@ namespace YesChefTiffWatcher
             InitializeSystemTray();
             InitializeWatcher();
 
+            taskbar = TaskbarManager.Instance;
             window.Title = Properties.Resources.AppName;
             WindowIcon.Source = new BitmapImage(new Uri("./Resources/Icon.ico", UriKind.RelativeOrAbsolute));
 
@@ -753,6 +756,9 @@ namespace YesChefTiffWatcher
 
         private void BtnStart_Click(object sender, RoutedEventArgs e)
         {
+            if (syncingState)
+                return;
+
             if (watchingState)
             {
                 StopWatcher();
@@ -774,6 +780,10 @@ namespace YesChefTiffWatcher
 
         private void BtnSync_Click(object sender, RoutedEventArgs e)
         {
+            if (syncingState)
+                return;
+
+            syncingState = true;
             watcher.EnableRaisingEvents = false;
             for (int i = 0; i < syncingList.Count; i++)
             {
@@ -792,6 +802,7 @@ namespace YesChefTiffWatcher
             removingList.Clear();
 
             HideProgressBar();
+            syncingState = false;
 
             if (watchingState)
                 watcher.EnableRaisingEvents = true;
@@ -933,6 +944,9 @@ namespace YesChefTiffWatcher
 
         private void ManualSyncFile_Click(object sender, RoutedEventArgs e)
         {
+            if (syncingState)
+                return;
+
             StopWatcher();
             CommonOpenFileDialog dialog = new CommonOpenFileDialog { IsFolderPicker = false, Multiselect = false, Title = $"{Properties.Resources.AppName}  -  选择需要同步的文件" };
             if (Directory.Exists(strWatcherPath))
@@ -956,14 +970,20 @@ namespace YesChefTiffWatcher
             string path2 = dialog2.FileName;
             if (!Directory.Exists(path2)) return;
 
+            syncingState = true;
             if (SyncFile(path, path2))
             {
                 ShowTrayMessage("已同步选择的文件。");
             }
+
+            syncingState = false;
         }
 
         private void ManualSyncFolder_Click(object sender, RoutedEventArgs e)
         {
+            if (syncingState)
+                return;
+
             StopWatcher();
             CommonOpenFileDialog dialog = new CommonOpenFileDialog { IsFolderPicker = true, Multiselect = false, Title = $"{Properties.Resources.AppName}  -  选择原始文件夹" };
             if (Directory.Exists(strWatcherPath))
@@ -992,6 +1012,7 @@ namespace YesChefTiffWatcher
             string path2 = dialog.FileName;
             if (!Directory.Exists(path2)) return;
 
+            syncingState = true;
             int count = 0;
             for (int i = 0; i < files.Length; i++)
             {
@@ -1005,6 +1026,7 @@ namespace YesChefTiffWatcher
 
             HideProgressBar();
             ShowTrayMessage($"已同步 {count} 个文件。");
+            syncingState = false;
         }
 
         private void ShowProgressBar(int index, int count)
@@ -1012,11 +1034,15 @@ namespace YesChefTiffWatcher
             ProgressBar.Height = 4;
             double width = index * progressBarWidth / count;
             ProgressBar.Width = width;
+
+            taskbar.SetProgressState(TaskbarProgressBarState.Normal, window);
+            taskbar.SetProgressValue(index, count, window);
         }
 
         private void HideProgressBar()
         {
             ProgressBar.Height = 0;
+            taskbar.SetProgressState(TaskbarProgressBarState.NoProgress, window);
         }
 
         private void RealTime_Click(object sender, RoutedEventArgs e)
