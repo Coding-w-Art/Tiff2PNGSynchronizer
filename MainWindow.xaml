@@ -18,18 +18,18 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid x:Name="LayoutRoot" Background="#2D2D30" Width="44" Height="30">
+                            <Grid x:Name="LayoutRoot" Background="Transparent" Width="44" Height="30">
                                 <TextBlock x:Name="txt" Text="{TemplateBinding Content}" FontFamily="Segoe MDL2 Assets" FontSize="10" 
                                    Foreground="#F1F1F1" HorizontalAlignment="Center" VerticalAlignment="Center"
                                    RenderOptions.ClearTypeHint="Auto" TextOptions.TextRenderingMode="Aliased" TextOptions.TextFormattingMode="Display"/>
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="LayoutRoot" Property="Background" Value="#3F3F41"/>
+                                    <Setter TargetName="LayoutRoot" Property="Background" Value="#20FFFFFF"/>
                                     <Setter TargetName="txt" Property="Foreground" Value="White"/>
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="LayoutRoot" Property="Background" Value="#007ACC"/>
+                                    <Setter TargetName="LayoutRoot" Property="Background" Value="#40FFFFFF"/>
                                     <Setter TargetName="txt" Property="Foreground" Value="White"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
@@ -42,7 +42,7 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid x:Name="LayoutRoot" Background="#2D2D30" Width="44" Height="30">
+                            <Grid x:Name="LayoutRoot" Background="Transparent" Width="44" Height="30">
                                 <TextBlock x:Name="txt" Text="{TemplateBinding Content}" FontFamily="Segoe MDL2 Assets" FontSize="10" 
                                            Foreground="#F1F1F1" HorizontalAlignment="Center" VerticalAlignment="Center"
                                            RenderOptions.ClearTypeHint="Auto" TextOptions.TextRenderingMode="Aliased" TextOptions.TextFormattingMode="Display"/>
@@ -100,7 +100,7 @@
             <DropShadowEffect x:Name="WindowShadowEffect" Color="#000000" Opacity="0.35" BlurRadius="20" Direction="-45" RenderingBias="Quality" ShadowDepth="2"/>
         </Grid.Effect>
 
-        <Grid Margin="20" Grid.Row="0" Height="30" Background="#FF2D2D30" VerticalAlignment="Top" MouseDown="MoveWindow">
+        <Grid x:Name="GridTitle" Margin="20" Grid.Row="0" Height="30" Background="#FF2D2D30" VerticalAlignment="Top" MouseDown="MoveWindow">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
                 <!--App icon-->
                 <Image x:Name="WindowIcon" Source="Resources/Icon.ico" Width="18" Margin="8, 4, 4, 4" HorizontalAlignment="Left" VerticalAlignment="Center" />
@@ -119,11 +119,11 @@
         <Grid Margin="20, 50, 20, 20" Background="#FF252526">
             <CheckBox x:Name="CheckBoxAutoRun" Content="开机自动运行" HorizontalAlignment="Right" VerticalAlignment="Top" Foreground="#999999" BorderBrush="#FF3F3F43" VerticalContentAlignment="Center" Background="#FFF1F1F1" Margin="0,12,24,0" Click="AutoRun_Click"/>
             <Grid Margin="0, 20, 0, 0">
-                <Label Content="原始路径" HorizontalAlignment="Left" Margin="20,26,0,0" VerticalAlignment="Top" Foreground="#FFF1F1F1" Height="24"/>
+                <Label Content="美术文件夹：" HorizontalAlignment="Left" Margin="20,26,0,0" VerticalAlignment="Top" Foreground="#FFF1F1F1" Height="24"/>
                 <TextBox x:Name="TextBoxWatcher" HorizontalAlignment="Left" Height="36" Margin="24,56,0,0" TextWrapping="NoWrap" Text="选择文件夹..." VerticalAlignment="Top" Width="436" BorderBrush="#FF3F3F43" Background="#FF333337" Foreground="#FF999999" Padding="8,10" FontSize="12" IsReadOnly="True"/>
                 <Image x:Name="ImageWatcher" Width="24" Height="24" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="428,62,0,0" Cursor="Hand" MouseLeftButtonUp="Folder_Click"/>
                 <Button x:Name="BtnPickWatcher" Content="..." HorizontalAlignment="Left" Margin="476,56,0,0" VerticalAlignment="Top" Width="40" Height="36" Background="#FF3F3F46" Foreground="#FFF1F1F1" FontSize="12" Padding="0" BorderThickness="1" BorderBrush="#FF555555" MouseEnter="Button_MouseEnter" MouseLeave="Button_MouseLeave" Click="BtnPickWatcher_Click"/>
-                <Label Content="目标路径" HorizontalAlignment="Left" Margin="20,100,0,0" VerticalAlignment="Top" Foreground="#FFF1F1F1" Height="24"/>
+                <Label Content="项目文件夹：" HorizontalAlignment="Left" Margin="20,100,0,0" VerticalAlignment="Top" Foreground="#FFF1F1F1" Height="24"/>
                 <TextBox x:Name="TextBoxSyncer" HorizontalAlignment="Left" Height="36" Margin="24,130,0,0" TextWrapping="NoWrap" Text="选择文件夹..." VerticalAlignment="Top" Width="436" BorderBrush="#FF3F3F43" Background="#FF333337" Foreground="#FF999999" Padding="8,10" FontSize="12" IsReadOnly="True"/>
                 <Image x:Name="ImageSyncer" Width="24" Height="24" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="428,136,0,0" Cursor="Hand" MouseLeftButtonUp="Folder_Click"/>
                 <Button x:Name="BtnPickSyncer" Content="..." HorizontalAlignment="Left" Margin="476,130,0,0" VerticalAlignment="Top" Width="40" Height="36" Background="#FF3F3F46" Foreground="#FFF1F1F1" FontSize="12" Padding="0" BorderThickness="1" BorderBrush="#FF555555" MouseEnter="Button_MouseEnter" MouseLeave="Button_MouseLeave" Click="BtnPickSyncer_Click"/>
@@ -149,7 +149,7 @@
         </Grid>
 
         <Grid Height="320" Width="540">
-            <Border x:Name="WindowBOrder" Height="320" Width="540" BorderBrush="#3F3F41" BorderThickness="1"/>
+            <Border x:Name="WindowBorder" Height="320" Width="540" BorderBrush="#3F3F41" BorderThickness="1"/>
         </Grid>
     </Grid>
 </Window>
