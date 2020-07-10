@@ -980,7 +980,7 @@ namespace YesChefTiffWatcher
 
             if (Path.GetDirectoryName(path) == path2)
             {
-                if (MessageBox.Show("原始文件与同步文件夹相同：\n\n是否转换并删除原始文件？", Properties.Resources.AppName, MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.No)
+                if (MessageBox.Show($"原始文件与同步文件夹相同：\n{path2}\n是否转换并删除原始文件？", Properties.Resources.AppName, MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.No)
                     return;
             }
 
@@ -1028,7 +1028,7 @@ namespace YesChefTiffWatcher
 
             if (dir == path2)
             {
-                if (MessageBox.Show($"原始文件夹与同步文件夹相同：\n{path2}\n，是否转换并删除原始文件？", Properties.Resources.AppName, MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.No)
+                if (MessageBox.Show($"原始文件夹与同步文件夹相同：\n{path2}\n是否转换并删除原始文件？", Properties.Resources.AppName, MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.No)
                     return;
             }
             else

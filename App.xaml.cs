@@ -26,24 +26,5 @@ namespace YesChefTiffWatcher
             MessageBox.Show($"{e.Exception.Message}{Environment.NewLine}{e.Exception.StackTrace}", "Error");
             e.Handled = true;
         }
-
-
-        [DllImport("user32")]
-        private static extern int SetForegroundWindow(IntPtr hwnd);
-        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-        private static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
-
-        protected override void OnStartup(StartupEventArgs e)
-        {
-            IntPtr parenthWnd = FindWindow(null, Assembly.GetExecutingAssembly().GetName().Name);
-            if (parenthWnd != IntPtr.Zero)
-            {
-                //选中当前的句柄窗口
-                SetForegroundWindow(parenthWnd);
-                Application.Current.Shutdown();
-                return;
-            }
-            base.OnStartup(e);
-        }
     }
 }
